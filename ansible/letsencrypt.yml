@@ -1,0 +1,99 @@
+---
+- name: Setup acme_tiny
+  hosts: "cloud"
+  vars_files:
+  - secrets.yml
+  tasks:
+    - name: Pull nginx docker image
+      community.docker.docker_image:
+        name: nginx
+        source: pull
+        tag: mainline
+
+    - name: Install git
+      ansible.builtin.apt:
+        name: git
+        force_apt_get: true
+        state: latest
+
+    - name: Get acme_tiny from GitHub
+      ansible.builtin.git:
+        repo: 'https://github.com/diafygi/acme-tiny'
+        dest: /root/acme_tiny
+        force: true
+
+    - name: Add letsencrypt user
+      ansible.builtin.user:
+        name: "letsencrypt"
+        groups: ""
+        password: "{{ vault_lets_encrypt_user_password }}"
+        shell: "/bin/bash"
+        state: present
+
+    - name: Move acme_tiny to /usr/local/bin
+      ansible.builtin.copy:
+        src: /root/acme_tiny/acme_tiny.py
+        dest: /usr/local/bin/acme_tiny.py
+        remote_src: true
+        mode: '770'
+        owner: 'letsencrypt'
+
+    - name: Add nginx letsencrypt challenge config
+      ansible.builtin.template:
+        src: ../configs/nginx/letsencrypt.conf.j2
+        dest: /etc/nginx-docker/letsencrypt.conf
+        mode: '400'
+
+    - name: Ensure /etc/letsencrypt dir exists
+      ansible.builtin.file:
+        path: /etc/letsencrypt
+        owner: 'letsencrypt'
+        group: 'root'
+        mode: '770'
+        state: directory
+
+    - name: Add letsencrypt account key
+      ansible.builtin.copy:
+        src: ../keys/account.key
+        dest: "{{ vault_lets_encrypt_account_key_path }}"
+        mode: '440'
+        owner: 'letsencrypt'
+
+    - name: Add letsencrypt domain key
+      ansible.builtin.copy:
+        src: ../keys/domain.key
+        dest: "{{ vault_lets_encrypt_domain_key_path }}"
+        mode: '440'
+        owner: 'letsencrypt'
+
+    - name: Add letsencrypt csr
+      ansible.builtin.copy:
+        src: ../keys/letsencrypt.csr
+        dest: "{{ vault_lets_encrypt_csr_path }}"
+        mode: '440'
+        owner: 'letsencrypt'
+
+    - name: Add renew_letsencrypt.sh
+      ansible.builtin.copy:
+        src: ../scripts/letsencrypt/renew_letsencrypt.sh
+        dest: /usr/local/bin/renew_letsencrypt.sh
+        mode: '770'
+        owner: 'letsencrypt'
+
+    - name: Ensure /var/www/challenges dir exists
+      ansible.builtin.file:
+        path: /var/www/challenges
+        owner: 'letsencrypt'
+        group: 'www-data'
+        mode: '770'
+        state: directory
+
+    - name: Add letsencrypt cron job
+      cron:
+        name: "Update certificate"
+        cron_file: "letsencrypt"
+        user: "root"
+        minute: "0"
+        hour: "6"
+        day: "5"
+        job: '/usr/local/bin/renew_letsencrypt.sh 2>&1 | tee /var/log/renew_letsencrypt.log'
