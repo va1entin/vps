@@ -1,0 +1,81 @@
+---
+- name: Teamspeak
+  hosts: "cloud"
+  vars:
+    ts_version: 3.13.3
+    mariadb_version: focal
+    mariadb_hostname: mariadb-ts
+    ts_host_dir: /var/ts_data
+    mariadb_host_dir: /var/ts_db_data
+  vars_files:
+    - secrets.yml
+  tasks:
+    - name: Install python-docker and yamllint
+      ansible.builtin.apt:
+        name: "python3-docker,yamllint"
+        force_apt_get: true
+        state: latest
+
+    # ansible-galaxy collection install community.general
+    - name: Create docker network "ts"
+      community.docker.docker_network:
+        name: ts
+
+    - name: Ensure {{ mariadb_host_dir }} dir exists
+      ansible.builtin.file:
+        path: "{{ mariadb_host_dir }}"
+        state: directory
+
+    # ansible-galaxy collection install community.general
+    - name: Run MariaDB container
+      community.general.docker_container:
+        name: "{{ mariadb_hostname }}"
+        image: mariadb:{{ mariadb_version }}
+        detach: true
+        networks:
+          - name: ts
+        restart: true
+        restart_policy: always
+        pull: true
+        volumes:
+          - "{{ mariadb_host_dir }}:/var/lib/mysql"
+        env:
+          TZ: "Europe/Berlin"
+          MYSQL_ROOT_PASSWORD: "{{ vault_ts_db_root_pw }}"
+          MYSQL_DATABASE: teamspeak
+          MYSQL_USER: teamspeak
+          MYSQL_PASSWORD: "{{ vault_ts_db_user_pw }}"
+          state: started
+
+    - name: Ensure {{ ts_host_dir }} dir exists
+      ansible.builtin.file:
+        path: "{{ ts_host_dir }}"
+        state: directory
+
+    # ansible-galaxy collection install community.general
+    - name: Run TS container
+      community.general.docker_container:
+        name: teamspeak
+        image: teamspeak:{{ ts_version }}
+        detach: true
+        network_mode: bridge
+        networks:
+          - name: ts
+        ports:
+          - 9987:9987/udp
+        restart: true
+        restart_policy: always
+        pull: true
+        volumes:
+          - /var/ts_data:/var/ts3server/
+        env:
+          TZ: "Europe/Berlin"
+          TS3SERVER_DB_PLUGIN: ts3db_mariadb
+          TS3SERVER_DB_SQLCREATEPATH: create_mariadb
+          TS3SERVER_DB_HOST: "{{ mariadb_hostname }}"
+          TS3SERVER_DB_USER: teamspeak
+          TS3SERVER_DB_PASSWORD: "{{ vault_ts_db_user_pw }}"
+          TS3SERVER_DB_NAME: teamspeak
+          TS3SERVER_DB_WAITUNTILREADY: "30"
+          TS3SERVER_LICENSE: accept
+        state: started
