@@ -1,0 +1,90 @@
+---
+- name: Initial setup of cloud VPS
+  hosts: "cloud"
+  vars:
+    new_user_name: val
+    new_user_groups: sudo
+    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat]
+  vars_files:
+    - secrets.yml
+# ansible-playbook --user root --ask-pass --ask-vault-password ansible/initial_setup.yml
+  tasks:
+    - name: Add user
+      ansible.builtin.user:
+        name: "{{ new_user_name }}"
+        groups: "{{ new_user_groups }}"
+        password: "{{ vault_initial_setup_new_user_password }}"
+        shell: "/bin/bash"
+        state: present
+
+    - name: Copy ssh ID to new user
+      ansible.posix.authorized_key:
+        user: "{{ new_user_name }}"
+        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        state: present
+
+    - name: Update apt cache and upgrade all packages, no dist upgrade
+      ansible.builtin.apt:
+        name: "*"
+        update_cache: true
+        force_apt_get: true
+        state: latest
+
+    - name: Install initial packages
+      ansible.builtin.apt:
+        name: "{{ initial_packages }}"
+        force_apt_get: true
+        state: latest
+
+    - name: Add 50unattended-upgrades config
+      ansible.builtin.copy:
+        src: ../configs/unattended-upgrades/50unattended-upgrades
+        dest: /etc/apt/apt.conf.d/50unattended-upgrades
+
+    - name: Add 20auto-upgrades config
+      ansible.builtin.copy:
+        src: ../configs/unattended-upgrades/20auto-upgrades
+        dest: /etc/apt/apt.conf.d/20auto-upgrades
+
+    - name: Add sshd config; restart sshd manually - systemctl restart sshd.service
+      ansible.builtin.copy:
+        src: ../configs/sshd/sshd_config
+        dest: /etc/ssh/sshd_config
+
+    - name: Add vimrc
+      ansible.builtin.copy:
+        src: ../configs/vim/vimrc
+        dest: /etc/vim/vimrc
+
+    - name: Add motd
+      ansible.builtin.copy:
+        src: ../configs/09-mymotd
+        dest: /etc/update-motd.d/09-mymotd
+        mode: '755'
+
+    - name: Disable default motd header
+      ansible.builtin.file:
+        path: /etc/update-motd.d/00-header
+        mode: '0644'
+        state: file
+
+    - name: Disable motd help text
+      ansible.builtin.file:
+        path: /etc/update-motd.d/10-help-text
+        mode: '0644'
+        state: file
+
+    - name: Add ufw_config.sh
+      ansible.builtin.copy:
+        src: ../scripts/ufw_config.sh
+        dest: /home/val/ufw_config.sh
+        mode: '700'
+
+    - name: Add hostname config for cloud-init, reboot needed to apply
+      ansible.builtin.copy:
+        src: ../configs/cloud-init/99_hostname.cfg
+        dest: /etc/cloud/cloud.cfg.d/99_hostname.cfg
+        mode: '644'
+
+    # - name: Reboot
+    #  ansible.builtin.reboot:
