@@ -75,8 +75,8 @@
         state: file
 
     - name: Add ufw_config.sh
-      ansible.builtin.copy:
-        src: ../scripts/ufw_config.sh
+      ansible.builtin.template:
+        src: ../scripts/ufw_config.sh.j2
         dest: /home/val/ufw_config.sh
         mode: '700'
 

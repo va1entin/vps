@@ -1,0 +1,27 @@
+#!/usr/bin/env bash
+
+echo -e "Opening ports...\n\n"
+
+echo "Opening port: SSH"
+ufw allow {{ vault_ssh_port }}
+echo ""
+
+# echo "Opening port: Mumble Server"
+# ufw allow 64738
+# echo ""
+
+echo "Opening port: Teamspeak Server"
+ufw allow 9987/udp
+echo ""
+
+#echo "Opening port: HTTP"
+#ufw allow 80
+# echo ""
+
+echo "Setting default rules..."
+ufw default deny incoming
+ufw default allow outgoing
+echo ""
+
+echo "Enabling ufw..."
+ufw enable
