@@ -10,12 +10,6 @@
   vars_files:
     - secrets.yml
   tasks:
-    - name: Install python-docker and yamllint
-      ansible.builtin.apt:
-        name: "python3-docker,yamllint"
-        force_apt_get: true
-        state: latest
-
     # ansible-galaxy collection install community.docker
     - name: Create docker network "ts"
       community.docker.docker_network:
