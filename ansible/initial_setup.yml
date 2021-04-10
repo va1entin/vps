@@ -96,7 +96,7 @@
 
     - name: Export docker gpg key to file
       ansible.builtin.command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
-    
+
     - name: Add apt list docker.list
       ansible.builtin.apt_repository:
         repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable"
@@ -108,6 +108,6 @@
         name: {{ docker_packages }}
         force_apt_get: true
         state: latest
-  
+
   # - name: Reboot
     #  ansible.builtin.reboot:
