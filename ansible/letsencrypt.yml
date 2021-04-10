@@ -4,6 +4,7 @@
   vars_files:
   - secrets.yml
   tasks:
+    # ansible-galaxy collection install community.docker
     - name: Pull nginx docker image
       community.docker.docker_image:
         name: nginx
