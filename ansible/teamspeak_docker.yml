@@ -16,7 +16,7 @@
         force_apt_get: true
         state: latest
 
-    # ansible-galaxy collection install community.general
+    # ansible-galaxy collection install community.docker
     - name: Create docker network "ts"
       community.docker.docker_network:
         name: ts
@@ -45,7 +45,7 @@
           MYSQL_DATABASE: teamspeak
           MYSQL_USER: teamspeak
           MYSQL_PASSWORD: "{{ vault_ts_db_user_pw }}"
-          state: started
+        state: started
 
     - name: Ensure {{ ts_host_dir }} dir exists
       ansible.builtin.file:
