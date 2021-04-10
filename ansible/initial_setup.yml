@@ -5,6 +5,8 @@
     new_user_name: val
     new_user_groups: sudo
     initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat]
+    docker_dependencies: [apt-transport-https, ca-certificates, curl, gnupg, lsb-release]
+    docker_packages: [docker-ce, docker-ce-cli, containerd.io, python3-docker, yamllint]
   vars_files:
     - secrets.yml
 # ansible-playbook --user root --ask-pass --ask-vault-password ansible/initial_setup.yml
@@ -86,5 +88,26 @@
         dest: /etc/cloud/cloud.cfg.d/99_hostname.cfg
         mode: '644'
 
-    # - name: Reboot
+    - name: Install stuff to access repo via HTTPS
+      ansible.builtin.apt:
+        name: {{ docker_dependencies }}
+        force_apt_get: true
+        state: latest
+
+    - name: Export docker gpg key to file
+      ansible.builtin.command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+    
+    - name: Add apt list docker.list
+      ansible.builtin.apt_repository:
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable"
+        filename: docker
+        state: present
+
+    - name: Install docker packages and yamllint
+      ansible.builtin.apt:
+        name: {{ docker_packages }}
+        force_apt_get: true
+        state: latest
+  
+  # - name: Reboot
     #  ansible.builtin.reboot:
