@@ -10,8 +10,12 @@ echo ""
 # ufw allow 64738
 # echo ""
 
-echo "Opening port: Teamspeak Server"
+echo "Opening port: Teamspeak Server Voice"
 ufw allow 9987/udp
+echo ""
+
+echo "Opening port: Teamspeak Server File Transfer"
+ufw allow 30033/tcp
 echo ""
 
 #echo "Opening port: HTTP"

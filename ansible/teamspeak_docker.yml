@@ -57,6 +57,7 @@
           - name: ts
         ports:
           - 9987:9987/udp
+          - 30033:30033/tcp
         restart: true
         restart_policy: always
         pull: true
