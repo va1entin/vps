@@ -88,6 +88,11 @@
         dest: /etc/cloud/cloud.cfg.d/99_hostname.cfg
         mode: '644'
 
+    # ansible-galaxy collection install community.general
+    - name: Set timezone to Europe/Berlin
+      community.general.timezone:
+        name: Europe/Berlin
+
     - name: Install stuff to access repo via HTTPS
       ansible.builtin.apt:
         name: {{ docker_repo_dependencies }}
