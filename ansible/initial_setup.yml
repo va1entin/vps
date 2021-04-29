@@ -2,11 +2,13 @@
 - name: Initial setup of cloud VPS
   hosts: "cloud"
   vars:
+    ubuntu_codename: focal
     new_user_name: val
     new_user_groups: sudo
     initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat]
     docker_repo_dependencies: [apt-transport-https, ca-certificates, curl, gnupg, lsb-release]
     docker_packages: [docker-ce, docker-ce-cli, containerd.io, python3-docker, yamllint]
+    apt_daily_timer_override_dir: /etc/systemd/system/apt-daily.timer.d
   vars_files:
     - secrets.yml
 # ansible-playbook --user root --ask-pass --ask-vault-password ansible/initial_setup.yml
@@ -48,6 +50,16 @@
         src: ../configs/unattended-upgrades/20auto-upgrades
         dest: /etc/apt/apt.conf.d/20auto-upgrades
 
+    - name: Ensure {{ apt_daily_timer_override_dir }} dir exists
+      ansible.builtin.file:
+        path: "{{ apt_daily_timer_override_dir }}"
+        state: directory
+
+    - name: Add apt-daily.timer override config
+      ansible.builtin.copy:
+        src: ../configs/unattended-upgrades/apt-daily.timer-override.conf
+        dest: "{{ apt_daily_timer_override_dir }}/override.conf"
+
     - name: Add sshd config; restart sshd manually - systemctl restart sshd.service
       ansible.builtin.template:
         src: ../configs/sshd/sshd_config.j2
@@ -60,7 +72,7 @@
 
     - name: Add motd
       ansible.builtin.copy:
-        src: ../configs/09-mymotd
+        src: ../configs/motd/09-mymotd
         dest: /etc/update-motd.d/09-mymotd
         mode: '755'
 
@@ -95,24 +107,28 @@
 
     - name: Install stuff to access repo via HTTPS
       ansible.builtin.apt:
-        name: {{ docker_repo_dependencies }}
+        name: "{{ docker_repo_dependencies }}"
         force_apt_get: true
         state: latest
 
     - name: Export docker gpg key to file
-      ansible.builtin.command: "curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg"
+      ansible.builtin.shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
 
     - name: Add apt list docker.list
       ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu focal stable"
+        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_codename }} stable"
         filename: docker
         state: present
 
     - name: Install docker packages and yamllint
       ansible.builtin.apt:
-        name: {{ docker_packages }}
+        name: "{{ docker_packages }}"
         force_apt_get: true
         state: latest
+
+    - name: Perform systemd daemon-reload
+      ansible.builtin.systemd:
+        daemon_reload: true
 
   # - name: Reboot
     #  ansible.builtin.reboot:
