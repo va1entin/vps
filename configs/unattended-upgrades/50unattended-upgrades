@@ -15,6 +15,7 @@ Unattended-Upgrade::Allowed-Origins {
 	"${distro_id}:${distro_codename}-updates";
 //	"${distro_id}:${distro_codename}-proposed";
 	"${distro_id}:${distro_codename}-backports";
+	"Docker:${distro_codename}";
 };
 
 // Python regular expressions, matching packages to exclude from upgrading
@@ -100,7 +101,7 @@ Unattended-Upgrade::Automatic-Reboot "true";
 // If automatic reboot is enabled and needed, reboot at the specific
 // time instead of immediately
 //  Default: "now"
-Unattended-Upgrade::Automatic-Reboot-Time "04:00";
+Unattended-Upgrade::Automatic-Reboot-Time "05:00";
 
 // Use apt bandwidth limit feature, this example limits the download
 // speed to 70kb/sec
