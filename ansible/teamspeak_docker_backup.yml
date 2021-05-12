@@ -1,0 +1,45 @@
+---
+- name: Teamspeak backup
+  hosts: "cloud"
+  vars:
+    backup_public_key_path: /root/ts-backup.public
+    mariadb_container_name: mariadb-ts
+    ts_data_folder: /var/ts_data
+    rclone_remote: gdrive
+  tasks:
+    - name: Install rclone
+      ansible.builtin.apt:
+        name: "rclone"
+        force_apt_get: true
+        state: latest
+
+    - name: Get tools from GitHub
+      ansible.builtin.git:
+        repo: 'https://github.com/va1entin/tools'
+        dest: /root/tools
+        force: true
+
+    - name: Download plasm
+      ansible.builtin.get_url:
+        url: https://github.com/va1entin/plasm/archive/refs/heads/master.zip
+        dest: /tmp/plasm-master.zip
+        mode: '0660'
+
+    - name: Install plasm from local zip
+      ansible.builtin.pip:
+        name: file:///tmp/plasm-master.zip
+
+    - name: Add backup encryption key
+      ansible.builtin.copy:
+        src: ../../../keys/ts-backup.public
+        dest: "{{ backup_public_key_path }}"
+        mode: '440'
+
+    - name: Add backup cron job
+      ansible.builtin.cron:
+        name: "Backup TS and TS DB to cloud"
+        cron_file: "ts_backup"
+        user: "root"
+        minute: "0"
+        hour: "6"
+        job: '/root/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ ts_data_folder }}" "{{ rclone_remote }}"'
