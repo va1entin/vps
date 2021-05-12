@@ -90,7 +90,7 @@
         state: directory
 
     - name: Add letsencrypt cron job
-      cron:
+      ansible.builtin.cron:
         name: "Update certificate"
         cron_file: "letsencrypt"
         user: "root"
