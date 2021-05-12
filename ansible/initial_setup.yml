@@ -5,7 +5,7 @@
     ubuntu_codename: focal
     new_user_name: val
     new_user_groups: sudo
-    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat]
+    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat, python3-pip]
     docker_repo_dependencies: [apt-transport-https, ca-certificates, curl, gnupg, lsb-release]
     docker_packages: [docker-ce, docker-ce-cli, containerd.io, python3-docker, yamllint]
     apt_daily_timer_override_dir: /etc/systemd/system/apt-daily.timer.d
