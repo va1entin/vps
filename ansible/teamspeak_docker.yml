@@ -2,7 +2,7 @@
 - name: Teamspeak
   hosts: "cloud"
   vars:
-    ts_version: 3.13.3
+    ts_version: 3.13.6
     mariadb_version: 10.5
     mariadb_hostname: mariadb-ts
     ts_host_dir: /var/ts_data
