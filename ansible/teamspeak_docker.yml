@@ -20,9 +20,9 @@
         path: "{{ mariadb_host_dir }}"
         state: directory
 
-    # ansible-galaxy collection install community.general
+    # ansible-galaxy collection install community.docker
     - name: Run MariaDB container
-      community.general.docker_container:
+      community.docker.docker_container:
         name: "{{ mariadb_hostname }}"
         image: mariadb:{{ mariadb_version }}
         detach: true
@@ -46,9 +46,9 @@
         path: "{{ ts_host_dir }}"
         state: directory
 
-    # ansible-galaxy collection install community.general
+    # ansible-galaxy collection install community.docker
     - name: Run TS container
-      community.general.docker_container:
+      community.docker.docker_container:
         name: teamspeak
         image: teamspeak:{{ ts_version }}
         detach: true
@@ -74,3 +74,12 @@
           TS3SERVER_DB_WAITUNTILREADY: "30"
           TS3SERVER_LICENSE: accept
         state: started
+
+    # ansible-galaxy collection install community.docker
+    - name: Prune docker
+      community.docker.docker_prune:
+        containers: true
+        images: true
+        networks: true
+        volumes: true
+        builder_cache: true
