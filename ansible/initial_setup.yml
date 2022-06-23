@@ -130,5 +130,14 @@
       ansible.builtin.systemd:
         daemon_reload: true
 
+    - name: Add cron job - docker prune
+      cron:
+        name: "Docker prune"
+        cron_file: "docker_prune"
+        user: "root"
+        minute: "0"
+        hour: "4"
+        job: 'docker system prune -f --volumes'
+
   # - name: Reboot
     #  ansible.builtin.reboot:

@@ -29,7 +29,7 @@
         networks:
           - name: ts
         restart: true
-        restart_policy: always
+        restart_policy: unless-stopped
         pull: true
         volumes:
           - "{{ mariadb_host_dir }}:/var/lib/mysql"
@@ -59,7 +59,7 @@
           - 9987:9987/udp
           - 30033:30033/tcp
         restart: true
-        restart_policy: always
+        restart_policy: unless-stopped
         pull: true
         volumes:
           - /var/ts_data:/var/ts3server/
@@ -74,15 +74,3 @@
           TS3SERVER_DB_WAITUNTILREADY: "30"
           TS3SERVER_LICENSE: accept
         state: started
-
-    # ansible-galaxy collection install community.docker
-    - name: Prune docker
-      community.docker.docker_prune:
-        containers: true
-        images: true
-        images_filters:
-          dangling: false
-        networks: true
-        volumes: true
-        builder_cache: true
-        timeout: 300
