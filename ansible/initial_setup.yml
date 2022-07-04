@@ -94,6 +94,12 @@
         dest: /home/val/ufw_config.sh
         mode: '700'
 
+    - name: Add disk_cleanup.sh
+      ansible.builtin.copy:
+        src: ../scripts/disk_cleanup.sh
+        dest: /usr/bin/disk_cleanup.sh
+        mode: '755'
+
     - name: Add hostname config for cloud-init, reboot needed to apply
       ansible.builtin.template:
         src: ../configs/cloud-init/99_hostname.j2
