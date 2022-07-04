@@ -40,6 +40,11 @@
         force_apt_get: true
         state: latest
 
+    - name: Add journald config
+      ansible.builtin.copy:
+        src: ../configs/journald/journald.conf
+        dest: /etc/systemd/journald.conf
+
     - name: Add 50unattended-upgrades config
       ansible.builtin.copy:
         src: ../configs/unattended-upgrades/50unattended-upgrades
