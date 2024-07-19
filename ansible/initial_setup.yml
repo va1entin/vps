@@ -2,12 +2,10 @@
 - name: Initial setup of cloud VPS
   hosts: "cloud"
   vars:
-    ubuntu_codename: focal
+    ubuntu_codename: noble
     new_user_name: val
     new_user_groups: sudo
-    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, netcat, python3-pip, p7zip-full]
-    docker_repo_dependencies: [apt-transport-https, ca-certificates, curl, gnupg, lsb-release]
-    docker_packages: [docker-ce, docker-ce-cli, containerd.io, python3-docker, yamllint]
+    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, python3-pip, p7zip-full, podman]
     apt_daily_timer_override_dir: /etc/systemd/system/apt-daily.timer.d
   vars_files:
     - secrets.yml
@@ -24,7 +22,7 @@
     - name: Copy ssh ID to new user
       ansible.posix.authorized_key:
         user: "{{ new_user_name }}"
-        key: "{{ lookup('file', '~/.ssh/id_rsa.pub') }}"
+        key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
         state: present
 
     - name: Update apt cache and upgrade all packages, no dist upgrade
@@ -65,7 +63,7 @@
         src: ../configs/unattended-upgrades/apt-daily.timer-override.conf
         dest: "{{ apt_daily_timer_override_dir }}/override.conf"
 
-    - name: Add sshd config; restart sshd manually - systemctl restart sshd.service
+    - name: Add sshd config; restart sshd manually - systemctl restart ssh.service
       ansible.builtin.template:
         src: ../configs/sshd/sshd_config.j2
         dest: /etc/ssh/sshd_config
@@ -116,39 +114,18 @@
       community.general.timezone:
         name: Europe/Berlin
 
-    - name: Install stuff to access repo via HTTPS
-      ansible.builtin.apt:
-        name: "{{ docker_repo_dependencies }}"
-        force_apt_get: true
-        state: latest
-
-    - name: Export docker gpg key to file
-      ansible.builtin.shell: curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --yes --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-
-    - name: Add apt list docker.list
-      ansible.builtin.apt_repository:
-        repo: "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu {{ ubuntu_codename }} stable"
-        filename: docker
-        state: present
-
-    - name: Install docker packages and yamllint
-      ansible.builtin.apt:
-        name: "{{ docker_packages }}"
-        force_apt_get: true
-        state: latest
-
     - name: Perform systemd daemon-reload
       ansible.builtin.systemd:
         daemon_reload: true
 
-    - name: Add cron job - docker prune
+    - name: Add cron job - container system prune
       cron:
-        name: "Docker prune"
-        cron_file: "docker_prune"
-        user: "root"
+        name: "Container system prune"
+        cron_file: "container_system_prune"
+        user: "val"
         minute: "0"
         hour: "4"
-        job: 'docker system prune -a -f --volumes'
+        job: 'podman system prune -a -f --volumes'
 
   # - name: Reboot
-    #  ansible.builtin.reboot:
+  #    ansible.builtin.reboot:
