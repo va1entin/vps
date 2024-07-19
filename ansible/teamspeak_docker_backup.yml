@@ -6,6 +6,7 @@
     mariadb_container_name: mariadb-ts
     ts_data_folder: /var/ts_data
     rclone_remote: gdrive
+    podman_user: val
   tasks:
     - name: Install rclone
       ansible.builtin.apt:
@@ -18,6 +19,7 @@
         repo: 'https://github.com/va1entin/tools'
         dest: /root/tools
         force: true
+      become: true
 
     - name: Download plasm
       ansible.builtin.get_url:
@@ -28,12 +30,14 @@
     - name: Install plasm from local zip
       ansible.builtin.pip:
         name: file:///tmp/plasm-master.zip
+        break_system_packages: true
 
     - name: Add backup encryption key
       ansible.builtin.copy:
         src: ../../../keys/ts-backup.public
         dest: "{{ backup_public_key_path }}"
         mode: '440'
+      become: true
 
     - name: Add backup cron job
       ansible.builtin.cron:
@@ -42,4 +46,5 @@
         user: "root"
         minute: "0"
         hour: "6"
-        job: '/root/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ ts_data_folder }}" "{{ rclone_remote }}"'
+        job: '/root/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ ts_data_folder }}" "{{ rclone_remote }}" "{{ podman_user }}"'
+      become: true
