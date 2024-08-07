@@ -29,7 +29,7 @@
         networks:
           - name: ts
         restart: true
-        restart_policy: unless-stopped
+        restart_policy: always
         pull: true
         volumes:
           - "{{ mariadb_host_dir }}:/var/lib/mysql"
@@ -59,7 +59,7 @@
           - 9987:9987/udp
           - 30033:30033/tcp
         restart: true
-        restart_policy: unless-stopped
+        restart_policy: always
         pull: true
         volumes:
           - /var/ts_data:/var/ts3server/
