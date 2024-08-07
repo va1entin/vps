@@ -122,6 +122,7 @@
       ansible.builtin.systemd_service:
         name: podman-restart
         enabled: true
+        scope: user
 
     - name: Add cron job - container system prune
       cron:
