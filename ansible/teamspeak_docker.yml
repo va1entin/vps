@@ -3,68 +3,56 @@
   hosts: "cloud"
   vars:
     ts_version: 3.13.7
-    mariadb_version: 10.6
+    mariadb_version: 11.4
     mariadb_hostname: mariadb-ts
-    ts_host_dir: /var/ts_data
-    mariadb_host_dir: /var/ts_db_data
+    ts_db_dump_host_dir: /home/val/ts-db-dump
   vars_files:
     - secrets.yml
   tasks:
-    # ansible-galaxy collection install community.docker
-    - name: Create docker network "ts"
-      community.docker.docker_network:
+    # ansible-galaxy collection install containers.podman
+    - name: Create container network "ts"
+      containers.podman.podman_network:
         name: ts
 
-    - name: Ensure {{ mariadb_host_dir }} dir exists
-      ansible.builtin.file:
-        path: "{{ mariadb_host_dir }}"
-        state: directory
-
-    # ansible-galaxy collection install community.docker
+    # ansible-galaxy collection install containers.podman
     - name: Run MariaDB container
-      community.docker.docker_container:
+      containers.podman.podman_container:
         name: "{{ mariadb_hostname }}"
-        image: mariadb:{{ mariadb_version }}
+        image: docker.io/library/mariadb:{{ mariadb_version }}
         detach: true
-        networks:
-          - name: ts
-        restart: true
+        hostname: "{{ mariadb_hostname }}"
+        network:
+          - ts
+        force_restart: true
         restart_policy: always
-        pull: true
         volumes:
-          - "{{ mariadb_host_dir }}:/var/lib/mysql"
+          - "/etc/localtime:/etc/localtime:ro"
+          - "mariadb-ts:/var/lib/mysql"
+        #  - "{{ ts_db_dump_host_dir }}:/docker-entrypoint-initdb.d" # for initializing the database
         env:
-          TZ: "Europe/Berlin"
-          MYSQL_ROOT_PASSWORD: "{{ vault_ts_db_root_pw }}"
-          MYSQL_DATABASE: teamspeak
-          MYSQL_USER: teamspeak
-          MYSQL_PASSWORD: "{{ vault_ts_db_user_pw }}"
+          MARIADB_ROOT_PASSWORD: "{{ vault_ts_db_root_pw }}"
+          MARIADB_DATABASE: teamspeak
+          MARIADB_USER: teamspeak
+          MARIADB_PASSWORD: "{{ vault_ts_db_user_pw }}"
         state: started
 
-    - name: Ensure {{ ts_host_dir }} dir exists
-      ansible.builtin.file:
-        path: "{{ ts_host_dir }}"
-        state: directory
-
-    # ansible-galaxy collection install community.docker
+    # ansible-galaxy collection install containers.podman
     - name: Run TS container
-      community.docker.docker_container:
+      containers.podman.podman_container:
         name: teamspeak
-        image: teamspeak:{{ ts_version }}
+        image: docker.io/library/teamspeak:{{ ts_version }}
         detach: true
-        network_mode: bridge
-        networks:
-          - name: ts
+        network:
+          - ts
         ports:
           - 9987:9987/udp
           - 30033:30033/tcp
-        restart: true
+        force_restart: true
         restart_policy: always
-        pull: true
         volumes:
-          - /var/ts_data:/var/ts3server/
+           - "/etc/localtime:/etc/localtime:ro"
+           - "teamspeak:/var/ts3server"
         env:
-          TZ: "Europe/Berlin"
           TS3SERVER_DB_PLUGIN: ts3db_mariadb
           TS3SERVER_DB_SQLCREATEPATH: create_mariadb
           TS3SERVER_DB_HOST: "{{ mariadb_hostname }}"
