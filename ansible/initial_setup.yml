@@ -114,6 +114,10 @@
       community.general.timezone:
         name: Europe/Berlin
 
+    - name: Enable systemd linger via loginctl
+      ansible.builtin.shell:
+        cmd: "loginctl enable-linger {{ new_user_name }}"
+
     - name: Perform systemd daemon-reload
       ansible.builtin.systemd_service:
         daemon_reload: true
