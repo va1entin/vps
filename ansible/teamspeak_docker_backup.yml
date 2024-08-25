@@ -2,24 +2,22 @@
 - name: Teamspeak backup
   hosts: "cloud"
   vars:
-    backup_public_key_path: /root/ts-backup.public
+    backup_public_key_path: /home/{{ podman_user }}/ts-backup.public
     mariadb_container_name: mariadb-ts
-    ts_data_folder: /var/ts_data
     rclone_remote: gdrive
     podman_user: val
   tasks:
-    - name: Install rclone
+    - name: Install rclone and git
       ansible.builtin.apt:
-        name: "rclone"
+        name: ["rclone", "git"]
         force_apt_get: true
         state: latest
 
     - name: Get tools from GitHub
       ansible.builtin.git:
         repo: 'https://github.com/va1entin/tools'
-        dest: /root/tools
+        dest: /home/{{ podman_user }}/tools
         force: true
-      become: true
 
     - name: Download plasm
       ansible.builtin.get_url:
@@ -37,14 +35,25 @@
         src: ../../../keys/ts-backup.public
         dest: "{{ backup_public_key_path }}"
         mode: '440'
-      become: true
 
-    - name: Add backup cron job
-      ansible.builtin.cron:
-        name: "Backup TS and TS DB to cloud"
-        cron_file: "ts_backup"
-        user: "root"
-        minute: "0"
-        hour: "6"
-        job: '/root/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ ts_data_folder }}" "{{ rclone_remote }}" "{{ podman_user }}"'
-      become: true
+    - name: Create systemd service unit file for backup job
+      ansible.builtin.template:
+        src: ../systemd/services/ts_backup.service.j2
+        dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.service
+
+    - name: Create systemd timer unit file for backup job
+      ansible.builtin.template:
+        src: ../systemd/timers/ts_backup.timer.j2
+        dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.timer
+
+    - name: Reload systemd daemon for user
+      ansible.builtin.systemd:
+        daemon_reload: true
+        scope: user
+
+    - name: Enable and start systemd timer for user
+      ansible.builtin.systemd:
+        name: ts_backup.timer
+        enabled: true
+        scope: user
+        state: started

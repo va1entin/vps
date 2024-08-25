@@ -5,7 +5,7 @@
     debian_version: bookworm
     new_user_name: val
     new_user_groups: sudo
-    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, python3-pip, p7zip-full, podman]
+    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, python3-pip, podman]
     apt_daily_timer_override_dir: /etc/systemd/system/apt-daily.timer.d
   vars_files:
     - secrets.yml
