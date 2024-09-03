@@ -23,12 +23,13 @@
         hostname: "{{ mariadb_hostname }}"
         network:
           - ts
-        force_restart: true
+        pull: newer
+        #force_restart: true # see https://github.com/containers/ansible-podman-collections/issues/816
         restart_policy: always
         volumes:
           - "/etc/localtime:/etc/localtime:ro"
           - "mariadb-ts:/var/lib/mysql"
-        #  - "{{ ts_db_dump_host_dir }}:/docker-entrypoint-initdb.d" # for initializing the database
+          # - "{{ ts_db_dump_host_dir }}:/docker-entrypoint-initdb.d" # for initializing the database
         env:
           MARIADB_ROOT_PASSWORD: "{{ vault_ts_db_root_pw }}"
           MARIADB_DATABASE: teamspeak
@@ -47,7 +48,7 @@
         ports:
           - 9987:9987/udp
           - 30033:30033/tcp
-        force_restart: true
+        #force_restart: true
         restart_policy: always
         volumes:
            - "/etc/localtime:/etc/localtime:ro"
