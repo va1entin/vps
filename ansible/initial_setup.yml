@@ -119,14 +119,35 @@
       become: yes
       become_user: "{{ new_user_name }}"
 
-    - name: Add cron job - container system prune
-      ansible.builtin.cron:
-        name: "Container system prune"
-        cron_file: "container_system_prune"
-        user: "val"
-        minute: "0"
-        hour: "4"
-        job: 'podman system prune -a -f --volumes'
+    - name: Create systemd service unit file for container system prune
+      ansible.builtin.template:
+        src: ../configs/systemd/services/podman_system_prune.service.j2
+        dest: "/home/{{ ansible_user_id }}/.config/systemd/user/podman_system_prune.service"
+      become: yes
+      become_user: "{{ new_user_name }}"
+
+    - name: Create systemd timer unit file for container system prune
+      ansible.builtin.template:
+        src: ../configs/systemd/timers/podman_system_prune.timer.j2
+        dest: "/home/{{ ansible_user_id }}/.config/systemd/user/podman_system_prune.timer"
+      become: yes
+      become_user: "{{ new_user_name }}"
+
+    - name: Perform systemd daemon-reload in user scope
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+        scope: user
+      become: yes
+      become_user: "{{ new_user_name }}"
+
+    - name: Enable and start systemd service for container system prune
+      ansible.builtin.systemd:
+        name: podman_system_prune.service
+        enabled: true
+        scope: user
+        state: started
+      become: yes
+      become_user: "{{ new_user_name }}"
 
   # - name: Reboot
   #    ansible.builtin.reboot:
