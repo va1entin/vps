@@ -3,7 +3,7 @@
   hosts: "cloud"
   vars:
     ts_version: 3.13.7
-    mariadb_version: 11.4.7
+    mariadb_version: 11.4.8
     mariadb_hostname: mariadb-ts
     ts_db_dump_host_dir: /home/val/ts-db-dump
   vars_files:
