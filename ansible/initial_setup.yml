@@ -105,20 +105,6 @@
       ansible.builtin.shell:
         cmd: "loginctl enable-linger {{ new_user_name }}"
 
-    - name: Perform systemd daemon-reload
-      ansible.builtin.systemd_service:
-        daemon_reload: true
-      become: yes
-
-    - name: Enable podman-restart systemd service
-      ansible.builtin.systemd_service:
-        name: podman-restart
-        enabled: true
-        scope: user
-        state: started
-      become: yes
-      become_user: "{{ new_user_name }}"
-
     - name: Create systemd service unit file for container system prune
       ansible.builtin.template:
         src: ../configs/systemd/services/podman_system_prune.service.j2
@@ -133,6 +119,11 @@
       become: yes
       become_user: "{{ new_user_name }}"
 
+    - name: Perform systemd daemon-reload
+      ansible.builtin.systemd_service:
+        daemon_reload: true
+      become: yes
+
     - name: Perform systemd daemon-reload in user scope
       ansible.builtin.systemd_service:
         daemon_reload: true
@@ -140,9 +131,18 @@
       become: yes
       become_user: "{{ new_user_name }}"
 
-    - name: Enable and start systemd service for container system prune
+    - name: Enable podman-restart systemd service
+      ansible.builtin.systemd_service:
+        name: podman-restart
+        enabled: true
+        scope: user
+        state: started
+      become: yes
+      become_user: "{{ new_user_name }}"
+
+    - name: Enable and start systemd timer for container system prune
       ansible.builtin.systemd:
-        name: podman_system_prune.service
+        name: podman_system_prune.timer
         enabled: true
         scope: user
         state: started

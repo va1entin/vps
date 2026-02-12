@@ -38,12 +38,12 @@
 
     - name: Create systemd service unit file for backup job
       ansible.builtin.template:
-        src: ../systemd/services/ts_backup.service.j2
+        src: ../configs/systemd/services/ts_backup.service.j2
         dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.service
 
     - name: Create systemd timer unit file for backup job
       ansible.builtin.template:
-        src: ../systemd/timers/ts_backup.timer.j2
+        src: ../configs/systemd/timers/ts_backup.timer.j2
         dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.timer
 
     - name: Reload systemd daemon for user
