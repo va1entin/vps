@@ -10,8 +10,10 @@
 " let g:skip_defaults_vim = 1
 "
 " If you would rather _use_ default.vim's settings, but have the system or
-" user vimrc override its settings, then uncomment the line below.
+" user vimrc override its settings, then uncomment both lines below (to load
+" the settings now but prevent it from being loaded by the user's vimrc).
 " source $VIMRUNTIME/defaults.vim
+" let g:skip_defaults_vim = 1
 
 " All Debian-specific settings are defined in $VIMRUNTIME/debian.vim and
 " sourced by the call to :runtime you can find below.  If you wish to change
@@ -30,9 +32,7 @@ runtime! debian.vim
 
 " Vim5 and later versions support syntax highlighting. Uncommenting the next
 " line enables syntax highlighting by default.
-if has("syntax")
-  syntax on
-endif
+"syntax on
 
 " If using a dark background within the editing area and syntax highlighting
 " turn on this option as well
