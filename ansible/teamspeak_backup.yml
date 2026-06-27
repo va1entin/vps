@@ -1,22 +1,22 @@
 ---
 - name: Teamspeak backup
-  hosts: "cloud"
+  hosts: "ts"
   vars:
-    backup_public_key_path: /home/{{ podman_user }}/ts-backup.public
+    backup_public_key_path: /home/{{ ansible_facts['user_id'] }}/ts-backup.public
     mariadb_container_name: mariadb-ts
     rclone_remote: gdrive
-    podman_user: val
   tasks:
     - name: Install rclone and git
       ansible.builtin.apt:
         name: ["rclone", "git"]
         force_apt_get: true
         state: latest
+      become: yes
 
     - name: Get tools from GitHub
       ansible.builtin.git:
         repo: 'https://github.com/va1entin/tools'
-        dest: /home/{{ podman_user }}/tools
+        dest: /home/{{ ansible_facts['user_id'] }}/tools
         force: true
 
     - name: Download plasm
@@ -39,12 +39,12 @@
     - name: Create systemd service unit file for backup job
       ansible.builtin.template:
         src: ../configs/systemd/services/ts_backup.service.j2
-        dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.service
+        dest: /home/{{ ansible_facts['user_id'] }}/.config/systemd/user/ts_backup.service
 
     - name: Create systemd timer unit file for backup job
       ansible.builtin.template:
         src: ../configs/systemd/timers/ts_backup.timer.j2
-        dest: /home/{{ podman_user }}/.config/systemd/user/ts_backup.timer
+        dest: /home/{{ ansible_facts['user_id'] }}/.config/systemd/user/ts_backup.timer
 
     - name: Reload systemd daemon for user
       ansible.builtin.systemd:

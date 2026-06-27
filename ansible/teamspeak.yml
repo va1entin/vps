@@ -1,11 +1,11 @@
 ---
 - name: Teamspeak
-  hosts: "cloud"
+  hosts: "ts"
   vars:
     ts_version: 3.13.7
-    mariadb_version: 11.4.11
+    mariadb_version: 12.3.2
     mariadb_hostname: mariadb-ts
-    ts_db_dump_host_dir: /home/val/ts-db-dump
+    ts_db_dump_host_dir: /home/{{ ansible_facts['user_id'] }}/ts-db-dump
   vars_files:
     - secrets.yml
   tasks:
@@ -14,7 +14,6 @@
       containers.podman.podman_network:
         name: ts
 
-    # ansible-galaxy collection install containers.podman
     - name: Run MariaDB container
       containers.podman.podman_container:
         name: "{{ mariadb_hostname }}"
@@ -30,6 +29,10 @@
           - "/etc/localtime:/etc/localtime:ro"
           - "mariadb-ts:/var/lib/mysql"
           # - "{{ ts_db_dump_host_dir }}:/docker-entrypoint-initdb.d" # for initializing the database
+            # podman exec -it mariadb-ts bash
+            # mariadb-dump teamspeak -u teamspeak -p  > /var/lib/mysql/ts-db-backup_2026-06-20.sql
+            # podman volume inspect mariadb-ts | grep Mountpoint
+            # scp xx dest:/home/{{ ansible_facts['user_id'] }}/ts-db-dump
         env:
           MARIADB_ROOT_PASSWORD: "{{ vault_ts_db_root_pw }}"
           MARIADB_DATABASE: teamspeak
@@ -37,7 +40,6 @@
           MARIADB_PASSWORD: "{{ vault_ts_db_user_pw }}"
         state: started
 
-    # ansible-galaxy collection install containers.podman
     - name: Run TS container
       containers.podman.podman_container:
         name: teamspeak
@@ -53,6 +55,11 @@
         volumes:
            - "/etc/localtime:/etc/localtime:ro"
            - "teamspeak:/var/ts3server"
+            # podman volume export teamspeak -o teamspeak_volume_2026-06-20.tar
+            # podman volume create teamspeak
+            # podman volume import teamspeak teamspeak_volume_2026-06-20.tar
+            # podman volume inspect teamspeak | grep Mountpoint
+            # ls
         env:
           TS3SERVER_DB_PLUGIN: ts3db_mariadb
           TS3SERVER_DB_SQLCREATEPATH: create_mariadb

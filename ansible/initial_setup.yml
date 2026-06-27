@@ -1,31 +1,13 @@
 ---
 - name: Initial setup of cloud VPS
-  hosts: "cloud"
+  hosts: "ts"
   vars:
-    debian_version: bookworm
-    new_user_name: val
-    new_user_groups: sudo
-    initial_packages: [screen, vim, unattended-upgrades, locate, ntp, ntpdate, net-tools, python3-pip, podman]
+    debian_version: trixie
+    initial_packages: [screen, vim, unattended-upgrades, locate, net-tools, python3-pip, podman]
     apt_daily_timer_override_dir: /etc/systemd/system/apt-daily.timer.d
   vars_files:
     - secrets.yml
-# ansible-playbook --user root --ask-pass --ask-vault-password ansible/initial_setup.yml
   tasks:
-    - name: Add user
-      ansible.builtin.user:
-        name: "{{ new_user_name }}"
-        groups: "{{ new_user_groups }}"
-        password: "{{ vault_initial_setup_new_user_password }}"
-        shell: "/bin/bash"
-        state: present
-      become: yes
-
-    - name: Copy ssh ID to new user
-      ansible.posix.authorized_key:
-        user: "{{ new_user_name }}"
-        key: "{{ lookup('file', '~/.ssh/id_ed25519.pub') }}"
-        state: present
-
     - name: Update apt cache and upgrade all packages, no dist upgrade
       ansible.builtin.apt:
         name: "*"
@@ -53,11 +35,12 @@
         dest: /etc/apt/apt.conf.d/50unattended-upgrades
       become: yes
 
-    - name: Add 20auto-upgrades config
-      ansible.builtin.copy:
-        src: ../configs/unattended-upgrades/20auto-upgrades
-        dest: /etc/apt/apt.conf.d/20auto-upgrades
-      become: yes
+    # was equivalent on debian 13
+    # - name: Add 20auto-upgrades config
+    #   ansible.builtin.copy:
+    #     src: ../configs/unattended-upgrades/20auto-upgrades
+    #     dest: /etc/apt/apt.conf.d/20auto-upgrades
+    #   become: yes
 
     - name: Ensure {{ apt_daily_timer_override_dir }} dir exists
       ansible.builtin.file:
@@ -88,6 +71,7 @@
         src: ../scripts/disk_cleanup.sh
         dest: /usr/bin/disk_cleanup.sh
         mode: '755'
+      become: yes
 
     - name: Add hostname config for cloud-init, reboot needed to apply
       ansible.builtin.template:
@@ -100,24 +84,26 @@
     - name: Set timezone to Europe/Berlin
       community.general.timezone:
         name: Europe/Berlin
+      become: yes
 
     - name: Enable systemd linger via loginctl
       ansible.builtin.shell:
-        cmd: "loginctl enable-linger {{ new_user_name }}"
+        cmd: "loginctl enable-linger {{ ansible_facts['user_id'] }}"
+
+    - name: Ensure systemd user unit directory exists
+      ansible.builtin.file:
+        path: "/home/{{ ansible_facts['user_id'] }}/.config/systemd/user"
+        state: directory
 
     - name: Create systemd service unit file for container system prune
       ansible.builtin.template:
         src: ../configs/systemd/services/podman_system_prune.service.j2
-        dest: "/home/{{ ansible_user_id }}/.config/systemd/user/podman_system_prune.service"
-      become: yes
-      become_user: "{{ new_user_name }}"
+        dest: "/home/{{ ansible_facts['user_id'] }}/.config/systemd/user/podman_system_prune.service"
 
     - name: Create systemd timer unit file for container system prune
       ansible.builtin.template:
         src: ../configs/systemd/timers/podman_system_prune.timer.j2
-        dest: "/home/{{ ansible_user_id }}/.config/systemd/user/podman_system_prune.timer"
-      become: yes
-      become_user: "{{ new_user_name }}"
+        dest: "/home/{{ ansible_facts['user_id'] }}/.config/systemd/user/podman_system_prune.timer"
 
     - name: Perform systemd daemon-reload
       ansible.builtin.systemd_service:
@@ -128,8 +114,6 @@
       ansible.builtin.systemd_service:
         daemon_reload: true
         scope: user
-      become: yes
-      become_user: "{{ new_user_name }}"
 
     - name: Enable podman-restart systemd service
       ansible.builtin.systemd_service:
@@ -137,8 +121,6 @@
         enabled: true
         scope: user
         state: started
-      become: yes
-      become_user: "{{ new_user_name }}"
 
     - name: Enable and start systemd timer for container system prune
       ansible.builtin.systemd:
@@ -146,8 +128,6 @@
         enabled: true
         scope: user
         state: started
-      become: yes
-      become_user: "{{ new_user_name }}"
 
   # - name: Reboot
   #    ansible.builtin.reboot:

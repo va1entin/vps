@@ -3,4 +3,4 @@ Description=Backup TS and TS DB to cloud
 
 [Service]
 Type=oneshot
-ExecStart=/home/{{ podman_user }}/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ rclone_remote }}"
+ExecStart=/home/{{ ansible_facts['user_id'] }}/tools/backup_ts/backup_ts_to_cloud.sh "{{ backup_public_key_path }}" "{{ mariadb_container_name }}" "{{ rclone_remote }}"
