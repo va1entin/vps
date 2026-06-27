@@ -32,17 +32,17 @@ variable "vm_name" {
 }
 
 variable "vm_location" {
-  type    = string
+  type        = string
   description = "Azure region where the VM will be deployed."
 }
 
 variable "admin_username" {
-  type    = string
+  type        = string
   description = "Admin username for the VM."
 }
 
 variable "ssh_port" {
-  type    = number
+  type        = number
   description = "Alternative SSH port for accessing the VM."
 }
 
@@ -107,7 +107,7 @@ resource "azurerm_network_security_group" "this" {
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
-    destination_port_range     = "${var.ssh_port}"
+    destination_port_range     = var.ssh_port
     source_address_prefix      = "${chomp(data.http.current_ip.response_body)}/32"
     destination_address_prefix = "*"
   }
