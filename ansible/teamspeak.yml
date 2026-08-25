@@ -3,7 +3,7 @@
   hosts: "ts"
   vars:
     ts_version: 3.13.7
-    mariadb_version: 12.3.2
+    mariadb_version: 12.3.3
     mariadb_hostname: mariadb-ts
     ts_db_dump_host_dir: /home/{{ ansible_facts['user_id'] }}/ts-db-dump
   vars_files:
